@@ -1,3 +1,6 @@
+import 'dart:isolate';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -36,10 +39,41 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
+void heavyProcess(int number) {
+  for (int counter = 0; counter < number; counter++) {
+    print("TEST");
+  }
+
+  print("DONE");
+}
+
+void heavyProcessWithoutParams(_) {
+  for (int counter = 0; counter < 10000000000; counter++) {
+    print("TEST");
+  }
+
+  print("DONE");
+}
+
+String anotherHeavyProcess(int number) {
+  int total = 0;
+  for (int counter = 0; counter < number; counter++) {
+    total += counter;
+  }
+  return total.toString();
+}
+
 class _MainPageState extends State<MainPage> {
   int number = 0;
   String result = 'no result';
   bool isComputing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    /**  Isolate.spawn<int>(heavyProcess, 100000000000000000); **/
+    Isolate.spawn(heavyProcessWithoutParams, null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +93,12 @@ class _MainPageState extends State<MainPage> {
               width: 200,
               margin: const EdgeInsets.all(20),
               child: ElevatedButton(
-                onPressed: () {},
-                child: const Text("increment"),
+                onPressed: () {
+                  setState(() {
+                    number++;
+                  });
+                },
+                child: const Text("increments"),
               ),
             ),
             Container(
@@ -73,7 +111,20 @@ class _MainPageState extends State<MainPage> {
             SizedBox(
               width: 200,
               child: ElevatedButton(
-                onPressed: isComputing ? null : () {},
+                onPressed: isComputing
+                    ? null
+                    : () async {
+                        setState(() {
+                          isComputing = !isComputing;
+                        });
+
+                        result = await compute<int, String>(
+                            anotherHeavyProcess, 10000);
+
+                        setState(() {
+                          isComputing = !isComputing;
+                        });
+                      },
                 child: const Text("Do Heavy Comoputation"),
               ),
             )
